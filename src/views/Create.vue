@@ -51,10 +51,10 @@
 			</div>
 
 			<div>
-				<h2>{{ t('forms', 'Make a Form') }}</h2>
+				<h2>{{ t('forms', 'List of questions') }}</h2>
 				<div v-show="form.event.type === 'quizForm'" id="quiz-form-selector-text">
 					<!--shows inputs for question types: drop down box to select the type, text box for question, and button to add-->
-					<label for="ans-type">Answer Type: </label>
+					<label for="ans-type">Style: </label>
 					<select v-model="selected">
 						<option value="" disabled>
 							Select
@@ -67,7 +67,7 @@
 					<button id="questButton"
 						@click="addQuestion()"
 					>
-						{{ t('forms', 'Add Question') }}
+						{{ t('forms', 'Question') }}
 					</button>
 				</div>
 				<!--Transition group to list the already added questions (in the form of quizFormItems)-->
@@ -564,14 +564,19 @@ input[type="text"] {
     flex-grow: 1;
     flex-wrap: wrap;
     overflow-x: hidden;
+    min-width: 320px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
 
     > div {
-        min-width: 245px;
-        max-width: 540px;
+        min-width: 300px;
+        max-width: 1380px;
+        width: 100%;
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        padding: 8px;
+        padding: 10px;
     }
 }
 
@@ -624,6 +629,24 @@ textarea {
 }
 /*  */
 
+#quiz-form-selector-text {
+	display: flex;
+    align-items: baseline;
+    padding-left: 8px;
+    padding-right: 8px;
+    line-height: 24px;
+    min-height: 24px;
+    border-bottom: 1px solid var(--color-border);
+    overflow: hidden;
+    white-space: nowrap;
+	> label,select {
+		margin-right: 10px;
+	}
+	> input {
+		flex-grow: 1;
+	}
+}
+
 #form-item-selector-text {
     > input {
         width: 100%;
@@ -636,35 +659,35 @@ textarea {
         align-items: baseline;
         padding-left: 8px;
         padding-right: 8px;
-        line-height: 24px;
-        min-height: 24px;
+        line-height: 36px;
+        min-height: 36px;
         border-bottom: 1px solid var(--color-border);
         overflow: hidden;
         white-space: nowrap;
-
         &:active,
         &:hover {
             transition: var(--background-dark) 0.3s ease;
             background-color: var(--color-background-dark); //$hover-color;
 
         }
-
         > div {
             display: flex;
             flex-grow: 1;
+            flex-wrap: wrap;
             font-size: 1.2em;
             opacity: 0.7;
             white-space: normal;
-            padding-right: 4px;
+            padding-right: 6px;
+            margin: 0 5px;
             &.avatar {
                 flex-grow: 0;
             }
         }
-
         > div:nth-last-child(1) {
             justify-content: center;
             flex-grow: 0;
             flex-shrink: 0;
+            flex-wrap: nowrap;
         }
     }
 }
