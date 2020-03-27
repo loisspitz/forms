@@ -27,56 +27,59 @@
 
 <template>
 	<AppContent>
-		<div class="workbench">
-			<div>
-				<h2>{{ t('forms', 'Form description') }}</h2>
+		<header>
+			<label class="hidden-visually" for="form-title">{{ t('forms', 'Title') }}</label>
+			<input
+				id="form-title"
+				v-model="form.event.title"
+				:minlength="0"
+				:placeholder="t('forms', 'Title')"
+				:required="true"
+				type="text">
+			<label class="hidden-visually" for="form-desc">{{ t('forms', 'Description') }}</label>
+			<textarea
+				id="form-desc"
+				ref="description"
+				v-model="form.event.description"
+				:placeholder="t('forms', 'Description')"
+				@keydown="autoSizeDescription" />
+		</header>
 
-				<label>{{ t('forms', 'Title') }}</label>
-				<input id="formTitle"
-					v-model="form.event.title"
-					:class="{ error: titleEmpty }"
-					type="text">
-
-				<label>{{ t('forms', 'Description') }}</label>
-				<textarea id="formDesc" v-model="form.event.description" style="resize: vertical; width: 100%;" />
+		<section>
+			<div id="quiz-form-selector-text">
+				<!--shows inputs for question types: drop down box to select the type, text box for question, and button to add-->
+				<label for="ans-type">Answer Type: </label>
+				<select v-model="selected">
+					<option value="" disabled>
+						Select
+					</option>
+					<option v-for="option in options" :key="option.value" :value="option.value">
+						{{ option.text }}
+					</option>
+				</select>
+				<input v-model="newQuizQuestion" :placeholder="t('forms', 'Add Question')" @keyup.enter="addQuestion()">
+				<button id="questButton"
+					@click="addQuestion()">
+					{{ t('forms', 'Add Question') }}
+				</button>
 			</div>
-
-			<div>
-				<h2>{{ t('forms', 'Make a Form') }}</h2>
-				<div id="quiz-form-selector-text">
-					<!--shows inputs for question types: drop down box to select the type, text box for question, and button to add-->
-					<label for="ans-type">Answer Type: </label>
-					<select v-model="selected">
-						<option value="" disabled>
-							Select
-						</option>
-						<option v-for="option in options" :key="option.value" :value="option.value">
-							{{ option.text }}
-						</option>
-					</select>
-					<input v-model="newQuizQuestion" :placeholder="t('forms', 'Add Question')" @keyup.enter="addQuestion()">
-					<button id="questButton"
-						@click="addQuestion()">
-						{{ t('forms', 'Add Question') }}
-					</button>
-				</div>
-				<!--Transition group to list the already added questions (in the form of quizFormItems)-->
-				<transitionGroup
-					id="form-list"
-					name="list"
-					tag="ul"
-					class="form-table">
-					<QuizFormItem
-						v-for="(question, index) in form.options.formQuizQuestions"
-						:key="question.id"
-						:question="question"
-						:type="question.type"
-						@add-answer="addAnswer"
-						@remove-answer="deleteAnswer"
-						@deleteQuestion="deleteQuestion(question, index)" />
-				</transitionGroup>
-			</div>
-		</div>
+			<!--Transition group to list the already added questions (in the form of quizFormItems)-->
+			<transitionGroup
+				id="form-list"
+				name="list"
+				tag="ul"
+				class="form-table">
+				<QuizFormItem
+					is="quiz-form-item"
+					v-for="(question, index) in form.options.formQuizQuestions"
+					:key="question.id"
+					:question="question"
+					:type="question.type"
+					@add-answer="addAnswer"
+					@remove-answer="deleteAnswer"
+					@deleteQuestion="deleteQuestion(question, index)" />
+			</transitionGroup>
+		</section>
 	</AppContent>
 </template>
 
@@ -111,7 +114,6 @@ export default {
 			nextQuizQuestionId: 1,
 			writingForm: false,
 			loadingForm: true,
-			titleEmpty: false,
 			selected: '',
 			uniqueName: false,
 			uniqueAns: false,
@@ -268,6 +270,12 @@ export default {
 			})
 		},
 
+		autoSizeDescription() {
+			const textarea = this.$refs.description
+			textarea.style.cssText = 'height:auto; padding:0'
+			textarea.style.cssText = `height: ${textarea.scrollHeight + 20}px`
+		},
+
 		debounceWriteForm: debounce(function() {
 			this.writeForm()
 		}, 200),
@@ -275,7 +283,6 @@ export default {
 		writeForm() {
 			this.allHaveAns()
 			if (this.form.event.title.length === 0 | !(/\S/.test(this.form.event.title))) {
-				this.titleEmpty = true
 				showError(t('forms', 'Title must not be empty!'), { duration: 3000 })
 			} else if (!this.haveAns) {
 				showError(t('forms', 'All questions need answers!'), { duration: 3000 })
@@ -283,7 +290,6 @@ export default {
 				showError(t('forms', 'Need to pick an expiration date!'), { duration: 3000 })
 			} else {
 				this.writingForm = true
-				this.titleEmpty = false
 
 				axios.post(OC.generateUrl('apps/forms/write/form'), this.form)
 					.then((response) => {
@@ -307,40 +313,36 @@ export default {
 
 <style lang="scss">
 #app-content {
-	input.hasTimepicker {
-		width: 75px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	header,
+	section {
+		width: 100%;
+		max-width: 900px;
 	}
-}
 
-.warning {
-	color: var(--color-error);
-	font-weight: bold;
-}
-
-.forms-content {
-	display: flex;
-	padding-top: 45px;
-	flex-grow: 1;
-}
-
-input[type="text"] {
-	display: block;
-	width: 100%;
-}
-
-.workbench {
-	display: flex;
-	flex-grow: 1;
-	flex-wrap: wrap;
-	overflow-x: hidden;
-
-	> div {
-		min-width: 245px;
-		max-width: 540px;
+	header {
 		display: flex;
 		flex-direction: column;
-		flex-grow: 1;
-		padding: 8px;
+		margin: 44px;
+
+		#form-title,
+		#form-desc {
+			width: 100%;
+			border: none;
+			margin: 10px; // aerate the header
+			padding: 0; // makes alignment and desc height calc easier
+		}
+		#form-title {
+			font-size: 2em;
+		}
+		#form-desc {
+			min-height: 60px;
+			max-height: 200px;
+			padding-left: 2px; // align with title (compensate font size diff)
+			resize: none
+		}
 	}
 }
 
