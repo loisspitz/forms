@@ -47,6 +47,7 @@
 				:minlength="0"
 				:placeholder="t('forms', 'Title')"
 				:required="true"
+				autofocus
 				type="text">
 			<label class="hidden-visually" for="form-desc">{{ t('forms', 'Description') }}</label>
 			<textarea
@@ -58,6 +59,17 @@
 		</header>
 
 		<section>
+			<!-- Add new questions toolbar -->
+			<!-- <div class="question-toolbar" role="toolbar">
+				<button v-for="type in answerTypes"
+					:key="type.label"
+					class="question-toolbar__question"
+					@click="addQuestion">
+					<span class="question-toolbar__icon" :class="type.icon" />
+					{{ type.label }}
+				</button>
+			</div> -->
+
 			<div id="quiz-form-selector-text">
 				<!--shows inputs for question types: drop down box to select the type, text box for question, and button to add-->
 				<label for="ans-type">Answer Type: </label>
@@ -65,7 +77,7 @@
 					<option value="" disabled>
 						Select
 					</option>
-					<option v-for="option in options" :key="option.value" :value="option.value">
+					<option v-for="option in answerTypes" :key="option.value" :value="option.value">
 						{{ option.text }}
 					</option>
 				</select>
@@ -75,21 +87,33 @@
 					{{ t('forms', 'Add Question') }}
 				</button>
 			</div>
-			<!--Transition group to list the already added questions (in the form of quizFormItems)-->
+
+			<!-- No questions -->
+			<EmptyContent v-if="form.options.formQuizQuestions.length === 0">
+				{{ t('forms', 'This form does not have any questions') }}
+				<template #desc>
+					<button class="primary" @click="openQuestionMenu">
+						{{ t('forms', 'Add a new one') }}
+					</button>
+				</template>
+			</EmptyContent>
+
+			<!-- Questions list -->
 			<transitionGroup
+				v-else
 				id="form-list"
 				name="list"
 				tag="ul"
 				class="form-table">
-				<QuizFormItem
+				<li
 					is="quiz-form-item"
 					v-for="(question, index) in form.options.formQuizQuestions"
 					:key="question.id"
 					:question="question"
 					:type="question.type"
 					@add-answer="addAnswer"
-					@remove-answer="deleteAnswer"
-					@deleteQuestion="deleteQuestion(question, index)" />
+					@remove-answer="removeAnswer"
+					@remove="form.options.formQuizQuestions.splice(index, 1)" />
 			</transitionGroup>
 		</section>
 	</AppContent>
@@ -100,20 +124,26 @@ import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import moment from '@nextcloud/moment'
 import { emit } from '@nextcloud/event-bus'
+import { showError } from '@nextcloud/dialogs'
 import debounce from 'debounce'
 
+import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
+import Actions from '@nextcloud/vue/dist/Components/Actions'
 import AppContent from '@nextcloud/vue/dist/Components/AppContent'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 
+import answerTypes from '../models/AnswerTypes'
+import EmptyContent from '../components/EmptyContent'
 import QuizFormItem from '../components/quizFormItem'
 import TopBar from '../components/TopBar'
-
 import ViewsMixin from '../mixins/ViewsMixin'
 
 export default {
 	name: 'Create',
 	components: {
+		ActionButton,
+		Actions,
 		AppContent,
+		EmptyContent,
 		QuizFormItem,
 		TopBar,
 	},
@@ -122,32 +152,19 @@ export default {
 
 	data() {
 		return {
-			placeholder: '',
 			newQuizAnswer: '',
 			newQuizQuestion: '',
 			nextQuizAnswerId: 1,
 			nextQuizQuestionId: 1,
 			writingForm: false,
-			loadingForm: true,
 			selected: '',
 			uniqueName: false,
-			uniqueAns: false,
-			haveAns: false,
-			options: [
-				{ text: 'Radio Buttons', value: 'radiogroup' },
-				{ text: 'Checkboxes', value: 'checkbox' },
-				{ text: 'Short Response', value: 'text' },
-				{ text: 'Long Response', value: 'comment' },
-				{ text: 'Drop Down', value: 'dropdown' },
-			],
+			uniqueAnsName: true,
+			answerTypes,
 		}
 	},
 
 	computed: {
-		langShort() {
-			return this.lang.split('-')[0]
-		},
-
 		title() {
 			if (this.form.event.title === '') {
 				return t('forms', 'Create new form')
@@ -167,10 +184,6 @@ export default {
 			}
 		},
 
-		localeData() {
-			return moment.localeData(moment.locale(this.locale))
-		},
-
 	},
 
 	watch: {
@@ -188,12 +201,7 @@ export default {
 	},
 
 	created() {
-		if (this.$route.name === 'create') {
-			// TODO: manage this from Forms.vue, request a new form to the server
-			this.form.event.owner = OC.getCurrentUser().uid
-			this.loadingForm = false
-		} else if (this.$route.name === 'edit') {
-			// TODO: fetch & update form?
+		if (this.$route.name === 'edit') {
 			this.form.mode = 'edit'
 		} else if (this.$route.name === 'clone') {
 			// TODO: CLONE
@@ -215,7 +223,7 @@ export default {
 			})
 		},
 
-		async addQuestion() {
+		addQuestion() {
 			this.checkNames()
 			if (this.selected === '') {
 				showError(t('forms', 'Select a question type!'), { duration: 3000 })
@@ -223,11 +231,8 @@ export default {
 				showError(t('forms', 'Cannot have the same question!'))
 			} else {
 				if (this.newQuizQuestion !== null & this.newQuizQuestion !== '' & (/\S/.test(this.newQuizQuestion))) {
-					const response = await axios.post(generateUrl('/apps/forms/api/v1/question/'), { formId: this.form.id, type: this.selected, text: this.newQuizQuestion })
-					const questionId = response.data
-
 					this.form.options.formQuizQuestions.push({
-						id: questionId,
+						id: this.nextQuizQuestionId++,
 						text: this.newQuizQuestion,
 						type: this.selected,
 						answers: [],
@@ -235,12 +240,6 @@ export default {
 				}
 				this.newQuizQuestion = ''
 			}
-		},
-
-		async deleteQuestion(question, index) {
-			await axios.delete(generateUrl('/apps/forms/api/v1/question/{id}', { id: question.id }))
-			// TODO catch Error
-			this.form.options.formQuizQuestions.splice(index, 1)
 		},
 
 		checkAnsNames(item, question) {
@@ -252,37 +251,39 @@ export default {
 			})
 		},
 
-		async addAnswer(item, question) {
+		removeAnswer(item, question, index) {
+			item.formQuizAnswers.splice(index, 1)
+			question.answers.splice(index, 1)
+		},
+
+		addAnswer(item, question) {
 			this.checkAnsNames(item, question)
 			if (!this.uniqueAnsName) {
 				showError(t('forms', 'Two answers cannot be the same!'), { duration: 3000 })
 			} else {
 				if (item.newQuizAnswer !== null & item.newQuizAnswer !== '' & (/\S/.test(item.newQuizAnswer))) {
-					const response = await axios.post(generateUrl('/apps/forms/api/v1/answer/'), { formId: this.form.id, questionId: question.id, text: item.newQuizAnswer })
-					const answerId = response.data
-
-					question.answers.push({
-						id: answerId,
+					item.formQuizAnswers.push({
+						id: item.nextQuizAnswerId,
 						text: item.newQuizAnswer,
 					})
+					question.answers.push({
+						id: item.nextQuizAnswerId,
+						text: item.newQuizAnswer,
+					})
+					item.nextQuizAnswerId++
 				}
 				item.newQuizAnswer = ''
 			}
 		},
 
-		async deleteAnswer(question, answer, index) {
-			await axios.delete(generateUrl('/apps/forms/api/v1/answer/{id}', { id: answer.id }))
-			// TODO catch errors
-			question.answers.splice(index, 1)
-		},
-
 		allHaveAns() {
-			this.haveAns = true
+			let haveAns = true
 			this.form.options.formQuizQuestions.forEach(q => {
 				if (q.type !== 'text' && q.type !== 'comment' && q.answers.length === 0) {
-					this.haveAns = false
+					haveAns = false
 				}
 			})
+			return haveAns
 		},
 
 		autoSizeDescription() {
@@ -295,31 +296,25 @@ export default {
 			this.writeForm()
 		}, 200),
 
-		writeForm() {
-			this.allHaveAns()
+		async writeForm() {
 			if (this.form.event.title.length === 0 | !(/\S/.test(this.form.event.title))) {
-				showError(t('forms', 'Title must not be empty!'), { duration: 3000 })
-			} else if (!this.haveAns) {
-				showError(t('forms', 'All questions need answers!'), { duration: 3000 })
+				showError(t('forms', 'Title must not be empty!'))
+			} else if (!this.allHaveAns()) {
+				showError(t('forms', 'All questions need answers!'))
 			} else if (this.form.event.expiration & this.form.event.expirationDate === '') {
-				showError(t('forms', 'Need to pick an expiration date!'), { duration: 3000 })
+				showError(t('forms', 'Need to pick an expiration date!'))
 			} else {
 				this.writingForm = true
-
-				axios.post(OC.generateUrl('apps/forms/write/form'), this.form)
-					.then((response) => {
-						this.form.mode = 'edit'
-						this.form.event.hash = response.data.hash
-						this.form.event.id = response.data.id
-						this.writingForm = false
-						showSuccess(t('forms', '%n successfully saved', 1, this.form.event.title), { duration: 3000 })
-					}, (error) => {
-						this.form.event.hash = ''
-						this.writingForm = false
-						showError(t('forms', 'Error on saving form, see console'))
-						/* eslint-disable-next-line no-console */
-						console.log(error.response)
-					})
+				try {
+					await axios.post(OC.generateUrl('apps/forms/write/form'), this.form)
+					this.form.mode = 'edit'
+					this.writingForm = false
+					console.debug(t('forms', '%n successfully saved', 1, this.form))
+				} catch (error) {
+					this.writingForm = false
+					showError(t('forms', 'Error while saving form'))
+					console.error(error)
+				}
 			}
 		},
 
@@ -336,6 +331,13 @@ export default {
 		},
 		toggleSidebar() {
 			emit('toggleSidebar')
+		},
+
+		/**
+		 * Add question methods
+		 */
+		openQuestionMenu() {
+			this.$refs.questionMenu.opened = true
 		},
 	},
 }
@@ -373,6 +375,10 @@ export default {
 			padding-left: 2px; // align with title (compensate font size diff)
 			resize: none
 		}
+	}
+
+	section {
+		position: relative;
 	}
 }
 
