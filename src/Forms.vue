@@ -120,9 +120,11 @@ export default {
 		 * Initial forms load
 		 */
 		async loadForms() {
+			console.debug('Loading forms')
+
 			this.loading = true
 			try {
-				const response = await axios.get(generateUrl('apps/forms/get/forms'))
+				const response = await axios.get(generateUrl('apps/forms/api/v1/forms'))
 				this.forms = response.data
 			} catch (error) {
 				showError(t('forms', 'An error occurred while loading the forms list'))

@@ -278,31 +278,23 @@ class ApiController extends Controller {
 	}
 
 	/**
-	 * Get all forms
 	 * @NoAdminRequired
-	 * @return DataResponse
 	 */
 	public function getForms() {
-		if (!\OC::$server->getUserSession()->getUser() instanceof IUser) {
-			return new DataResponse(null, Http::STATUS_UNAUTHORIZED);
+		$forms = $this->eventMapper->findAllByUid($this->userId);
+
+		$result = [];
+		foreach ($forms as $form) {
+			$result[] = [
+				'id' => $form->getId(),
+				'event' => $form->read(),
+				'options' => [
+					'formQuizQuestions' => $this->getQuestions($form->getId())
+				],
+			];
 		}
 
-		try {
-			$events = $this->eventMapper->findAll();
-		} catch (DoesNotExistException $e) {
-			return new DataResponse($e, Http::STATUS_NOT_FOUND);
-		}
-
-		$eventsList = array();
-
-		foreach ($events as $eventElement) {
-			$event = $this->getForm($eventElement->id);
-			//if ($event['grantedAs'] !== 'none') {
-				$eventsList[] = $event;
-			//}
-		}
-
-		return new DataResponse($eventsList, Http::STATUS_OK);
+		return new DataResponse($result);
 	}
 
 	/**

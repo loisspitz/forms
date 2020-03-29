@@ -4,7 +4,7 @@
  *
  * @author Vinzenz Rosenkranz <vinzenz.rosenkranz@gmail.com>
  * @author René Gieling <github@dartcafe.de>
-*
+ *
  * @license GNU AGPL version 3 or any later version
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ class EventMapper extends QBMapper {
 
 	/**
 	 * EventMapper constructor.
+	 *
 	 * @param IDBConnection $db
 	 */
 	public function __construct(IDBConnection $db) {
@@ -40,51 +41,65 @@ class EventMapper extends QBMapper {
 
 	/**
 	 * @param Integer $id
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
 	 * @return Event
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
 	 */
 	public function find(int $id): Event {
 		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-           ->from($this->getTableName())
-           ->where(
-               $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-           );
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+			);
 
-        return $this->findEntity($qb);
+		return $this->findEntity($qb);
 	}
 
 	/**
 	 * @param String $hash
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
 	 * @return Event
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
 	 */
 	public function findByHash(string $hash): Event {
 		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-           ->from($this->getTableName())
-           ->where(
-               $qb->expr()->eq('hash', $qb->createNamedParameter($hash, IQueryBuilder::PARAM_STR))
-           );
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq('hash', $qb->createNamedParameter($hash, IQueryBuilder::PARAM_STR))
+			);
 
-        return $this->findEntity($qb);
+		return $this->findEntity($qb);
 	}
 
 	/**
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
 	 * @return Event[]
 	 */
 	public function findAll(): array {
 		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-           ->from($this->getTableName());
+		$qb->select('*')
+			->from($this->getTableName());
 
-        return $this->findEntities($qb);
+		return $this->findEntities($qb);
+	}
+
+	/**
+	 * @return Event[]
+	 */
+	public function findAllByUid(string $uid): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq('owner', $qb->createNamedParameter($uid))
+			);
+
+		return $this->findEntities($qb);
 	}
 
 }
