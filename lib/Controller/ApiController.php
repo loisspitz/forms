@@ -28,6 +28,7 @@
 
 namespace OCA\Forms\Controller;
 
+use OCA\Forms\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
@@ -38,7 +39,6 @@ use OCP\IGroupManager;
 use OCP\ILogger;
 use OCP\IRequest;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
 
 use OCA\Forms\Db\Event;
@@ -50,12 +50,9 @@ use OCA\Forms\Db\QuestionMapper;
 use OCA\Forms\Db\Answer;
 use OCA\Forms\Db\AnswerMapper;
 
-use OCP\Util;
-
 class ApiController extends Controller {
 
 	private $groupManager;
-	private $userManager;
 	private $eventMapper;
 	private $voteMapper;
 	private $questionMapper;
@@ -67,23 +64,9 @@ class ApiController extends Controller {
 	/** @var string */
 	private $userId;
 
-	/**
-	 * PageController constructor.
-	 * @param string $appName
-	 * @param IGroupManager $groupManager
-	 * @param IRequest $request
-	 * @param IUserManager $userManager
-	 * @param string $userId
-	 * @param EventMapper $eventMapper
-	 * @param VoteMapper $voteMapper
-	 * @param QuestionMapper $questionMapper
-	 * @param AnswerMapper $answerMapper
-	 */
 	public function __construct(
-		$appName,
 		IGroupManager $groupManager,
 		IRequest $request,
-		IUserManager $userManager,
 		$userId,
 		EventMapper $eventMapper,
 		VoteMapper $voteMapper,
@@ -91,53 +74,14 @@ class ApiController extends Controller {
 		AnswerMapper $answerMapper,
 		ILogger $logger
 	) {
-		parent::__construct($appName, $request);
+		parent::__construct(Application::APP_ID, $request);
 		$this->userId = $userId;
 		$this->groupManager = $groupManager;
-		$this->userManager = $userManager;
 		$this->eventMapper = $eventMapper;
 		$this->voteMapper = $voteMapper;
 		$this->questionMapper = $questionMapper;
 		$this->answerMapper = $answerMapper;
 		$this->logger = $logger;
-	}
-
-	/**
-	 * Transforms a string with user and group names to an array
-	 * of nextcloud users and groups
-	 * @param string $item
-	 * @return Array
-	 */
-	private function convertAccessList($item) {
-		$split = array();
-		if (strpos($item, 'user_') === 0) {
-			$user = $this->userManager->get(substr($item, 5));
-			$split = [
-				'id' => $user->getUID(),
-				'user' => $user->getUID(),
-				'type' => 'user',
-				'desc' => 'user',
-				'icon' => 'icon-user',
-				'displayName' => $user->getDisplayName(),
-				'avatarURL' => '',
-				'lastLogin' => $user->getLastLogin(),
-				'cloudId' => $user->getCloudId()
-			];
-		} elseif (strpos($item, 'group_') === 0) {
-			$group = substr($item, 6);
-			$group = $this->groupManager->get($group);
-			$split = [
-				'id' => $group->getGID(),
-				'user' => $group->getGID(),
-				'type' => 'group',
-				'desc' => 'group',
-				'icon' => 'icon-group',
-				'displayName' => $group->getDisplayName(),
-				'avatarURL' => '',
-			];
-		}
-
-		return($split);
 	}
 
 	/**
@@ -338,7 +282,6 @@ class ApiController extends Controller {
 	 * @NoAdminRequired
 	 * @return DataResponse
 	 */
-
 	public function getForms() {
 		if (!\OC::$server->getUserSession()->getUser() instanceof IUser) {
 			return new DataResponse(null, Http::STATUS_UNAUTHORIZED);
