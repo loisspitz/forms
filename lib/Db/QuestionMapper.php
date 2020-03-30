@@ -28,16 +28,22 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\AppFramework\Db\QBMapper;
 
+use OCA\Forms\Db\OptionMapper;
+
 class QuestionMapper extends QBMapper {
 
-	public function __construct(IDBConnection $db) {
-		parent::__construct($db, 'forms_questions', Question::class);
+	private $optionMapper;
+
+	public function __construct(IDBConnection $db, OptionMapper $optionMapper) {
+		parent::__construct($db, 'forms_v2_questions', Question::class);
+
+		$this->optionMapper = $optionMapper;
 	}
 
 	/**
 	 * @param int $formId
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
-	 * @return Option[]
+	 * @return Question[]
 	 */
 
 	public function findByForm(int $formId): array {
@@ -58,6 +64,13 @@ class QuestionMapper extends QBMapper {
 	public function deleteByForm(int $formId): void {
 		$qb = $this->db->getQueryBuilder();
 
+		// First delete corresponding options.
+		$questionEntities = $this->findByForm($formId);
+		foreach ($questionEntities as $questionEntity) {
+			$this->optionMapper->deleteByQuestion($questionEntity->id);
+		}
+
+		// Delete Questions
 		$qb->delete($this->getTableName())
 			->where(
 				$qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT))
@@ -72,7 +85,7 @@ class QuestionMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($questionId))
+				$qb->expr()->eq('id', $qb->createNamedParameter($questionId, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity($qb);

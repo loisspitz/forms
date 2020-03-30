@@ -28,79 +28,63 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\AppFramework\Db\QBMapper;
 
-class VoteMapper extends QBMapper {
+class FormMapper extends QBMapper {
 
 	/**
-	 * VoteMapper constructor.
+	 * FormMapper constructor.
 	 * @param IDBConnection $db
 	 */
 	public function __construct(IDBConnection $db) {
-		parent::__construct($db, 'forms_votes', Vote::class);
+		parent::__construct($db, 'forms_v2_forms', Form::class);
 	}
 
 	/**
-	 * @param int $formId
+	 * @param Integer $id
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
-	 * @return Vote[]
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
+	 * @return Form
 	 */
-	public function findByForm(int $formId): array {
+	public function find(int $id): Form {
 		$qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
-           ->from($this->getTableName())
+           ->from($this->tableName)
            ->where(
-               $qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT))
+               $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
            );
 
-        return $this->findEntities($qb);
+        return $this->findEntity($qb);
 	}
 
 	/**
-	 * @param int $formId
+	 * @param String $hash
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
-	 * @return array
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException if more than one result
+	 * @return Form
 	 */
-	public function findParticipantsByForm(int $formId, $limit = null, $offset = null): array {
+	public function findByHash(string $hash): Form {
 		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('user_id')
-           ->from($this->getTableName())
+        $qb->select('*')
+           ->from($this->tableName)
            ->where(
-               $qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT))
+               $qb->expr()->eq('hash', $qb->createNamedParameter($hash, IQueryBuilder::PARAM_STR))
            );
+
+        return $this->findEntity($qb);
+	}
+
+	/**
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException if not found
+	 * @return Form[]
+	 */
+	public function findAll(): array {
+		$qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+           ->from($this->tableName);
 
         return $this->findEntities($qb);
 	}
 
-	/**
-	 * @param int $formId
-	 * @param string $userId
-	 */
-	 public function deleteByFormAndUser(int $formId, string $userId): void {
-		$qb = $this->db->getQueryBuilder();
-
-        $qb->delete($this->getTableName())
-           ->where(
-               $qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT))
-           )
-           ->andWhere(
-               $qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
-           );
-
-	   $qb->execute();
-	}
-
-	/**
-	* @param int $formId
-	*/
-	public function deleteByForm(int $formId): void {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->delete($this->getTableName())
-		->where(
-			$qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT))
-		);
-
-		$qb->execute();
-	}
 }
