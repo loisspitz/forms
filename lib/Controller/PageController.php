@@ -94,7 +94,7 @@ class PageController extends Controller {
 	 */
 	public function index(): TemplateResponse {
 		Util::addScript($this->appName, 'forms');
-		Util::addStyle($this->appName, 'icons');
+		Util::addStyle($this->appName, 'forms');
 		return new TemplateResponse($this->appName, 'main');
 	}
 
@@ -106,7 +106,7 @@ class PageController extends Controller {
 	 */
 	public function createForm(): TemplateResponse {
 		Util::addScript($this->appName, 'forms');
-		Util::addStyle($this->appName, 'icons');
+		Util::addStyle($this->appName, 'forms');
 		return new TemplateResponse($this->appName, 'main');
 	}
 
@@ -118,7 +118,7 @@ class PageController extends Controller {
 	 */
 	public function cloneForm(): TemplateResponse {
 		Util::addScript($this->appName, 'forms');
-		Util::addStyle($this->appName, 'icons');
+		Util::addStyle($this->appName, 'forms');
 		return new TemplateResponse($this->appName, 'main');
 	}
 
@@ -130,7 +130,7 @@ class PageController extends Controller {
 	 */
 	public function editForm(): TemplateResponse {
 		Util::addScript($this->appName, 'forms');
-		Util::addStyle($this->appName, 'icons');
+		Util::addStyle($this->appName, 'forms');
 		return new TemplateResponse($this->appName, 'main');
 	}
 
@@ -142,7 +142,7 @@ class PageController extends Controller {
 	 */
 	public function getResult(): TemplateResponse {
 		Util::addScript($this->appName, 'forms');
-		Util::addStyle($this->appName, 'icons');
+		Util::addStyle($this->appName, 'forms');
 		return new TemplateResponse($this->appName, 'main');
 	}
 

@@ -33,7 +33,7 @@
 		<div v-for="sum in stats" :key="sum">
 			{{ sum }}
 		</div>
-		<div id="app-content">
+		<div id="app-content" :class="{'icon-loading': loading}">
 			<transition-group
 				name="list"
 				tag="div"
@@ -48,7 +48,6 @@
 					:vote="vote"
 					@viewResults="viewFormResults(index, form.event, 'results')" />
 			</transition-group>
-			<LoadingOverlay v-if="loading" />
 			<modal-dialog />
 		</div>
 	</AppContent>
@@ -58,7 +57,6 @@
 import ResultItem from '../components/resultItem'
 import json2csvParser from 'json2csv'
 import axios from '@nextcloud/axios'
-import LoadingOverlay from '../components/_base-LoadingOverlay'
 import ViewsMixin from '../mixins/ViewsMixin'
 
 import AppContent from '@nextcloud/vue/dist/Components/AppContent'
@@ -68,7 +66,6 @@ export default {
 	components: {
 		AppContent,
 		ResultItem,
-		LoadingOverlay,
 	},
 
 	mixins: [ViewsMixin],
