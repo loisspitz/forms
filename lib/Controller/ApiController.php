@@ -452,19 +452,6 @@ class ApiController extends Controller {
 			$newForm->setHash($oldForm->getHash());
 			$newForm->setId($oldForm->getId());
 			$this->formMapper->update($newForm);
-
-		} elseif ($mode === 'create') {
-			// Create new form
-			// Define current user as owner, set new creation date and create a new hash
-			$newForm->setOwnerId($currentUser);
-			$newForm->setCreated(date('Y-m-d H:i:s'));
-			$newForm->setHash(\OC::$server->getSecureRandom()->generate(
-				16,
-				ISecureRandom::CHAR_DIGITS .
-				ISecureRandom::CHAR_LOWER .
-				ISecureRandom::CHAR_UPPER
-			));
-			$newForm = $this->formMapper->insert($newForm);
 		}
 
 		return new DataResponse(array(
