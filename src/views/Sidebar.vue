@@ -150,22 +150,6 @@ export default {
 				},
 			}
 		},
-
-		optionDatePicker() {
-			return {
-				editable: false,
-				minuteStep: 1,
-				type: 'datetime',
-				format: moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT'),
-				lang: this.lang.split('-')[0],
-				placeholder: t('forms', 'Click to add a date'),
-				timePickerOptions: {
-					start: '00:00',
-					step: '00:30',
-					end: '23:30',
-				},
-			}
-		},
 	},
 
 	created() {
